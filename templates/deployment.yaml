@@ -1,0 +1,93 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ template "hound.fullname" . }}
+  labels:
+    app: {{ template "hound.name" . }}
+    chart: {{ template "hound.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: {{ if .Values.Persistence.Enabled }}Recreate{{ else }}RollingUpdate{{ end }}
+  selector:
+    matchLabels:
+      app: {{ template "hound.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "hound.name" . }}
+        release: {{ .Release.Name }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/go/bin/houndd"]
+          args: ["-conf", "/etc/hound/config.json"]
+          env:
+          - name: GIT_SSH
+            value: "/etc/hound/wrapper"
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          #livenessProbe:
+          #  httpGet:
+          #    path: /
+          #    port: http
+          #readinessProbe:
+          #  httpGet:
+          #    path: /
+          #    port: http
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+          volumeMounts:
+{{- if .Values.Persistence.mounts }}
+{{ toYaml .Values.Persistence.mounts | indent 12 }}
+{{- end }}
+            {{- if .Values.id_rsa.install }}
+            - name: ssh-key
+              mountPath: /etc/ssh-key
+              readOnly: true
+            {{- end }}
+            - name: hound-config
+              mountPath: /etc/hound
+              readOnly: true
+            - name: hound-data
+              mountPath: /data
+              readOnly: false
+      volumes:
+      - name: hound-config
+        configMap:
+          name: {{ template "hound.fullname" . }}
+          defaultMode: 493
+      - name: hound-data
+      {{- if .Values.Persistence.Enabled }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.Persistence.ExistingClaim | default (include "hound.fullname" .) }}
+      {{- else }}
+        emptyDir: {}
+      {{- end }}
+      {{- if .Values.id_rsa.install }}
+      - name: ssh-key
+        secret:
+          secretName: {{ template "hound.fullname" . }}-ssh-key
+          defaultMode: 256
+      {{- end -}}

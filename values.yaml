@@ -1,0 +1,55 @@
+# Default values for hound.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: etsy/hound
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  externalPort: 80
+  internalPort: 6080
+  # externalIPs: []
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+Persistence:
+  Enabled: false
+  # StorageClass: "-"
+
+  Annotations: {}
+  AccessMode: ReadWriteOnce
+  Size: 8Gi
+
+config:
+  max-concurrent-indexers: 2
+  dbpath: /data
+  repos:
+    heroku-buildpack-wallarm-node:
+      url: https://github.com/wallarm/heroku-buildpack-wallarm-node.git
+    ingress-plus:
+      url: https://github.com/wallarm/ingress-plus.git
+
+id_rsa:
+  install: false
+  key: ......ssh-rsa key goes here.......

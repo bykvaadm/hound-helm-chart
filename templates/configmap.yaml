@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "hound.fullname" . }}
+  labels:
+    app: {{ template "hound.fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+data:
+  wrapper: |
+    #!/bin/sh
+    ssh -o StrictHostKeyChecking=no -i /etc/ssh-key/id_rsa $@
+  config.json: |-
+{{ toJson .Values.config| indent 4 }}
