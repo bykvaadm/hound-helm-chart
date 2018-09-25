@@ -27,6 +27,20 @@ resources: {}
   #  cpu: 100m
   #  memory: 128Mi
 
+
+HealthProbes:
+  liveness: true
+  # Number of seconds after the container has started before liveness or readiness probes are initiated.
+  initialDelaySeconds: 10
+  # How often (in seconds) to perform the probe. Default to 10 seconds. Minimum value is 1.
+  periodSeconds: 10
+  # Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1.
+  timeoutSeconds: 1
+  # Minimum consecutive successes for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness. Minimum value is 1.
+  successThreshold: 1
+  # When a Pod starts and the probe fails, Kubernetes will try failureThreshold times before giving up. Giving up in case of liveness probe means restarting the Pod. In case of readiness probe the Pod will be marked Unready. Defaults to 3. Minimum value is 1.
+  failureThreshold: 3
+
 nodeSelector: {}
 
 tolerations: []
@@ -52,4 +66,4 @@ config:
 
 id_rsa:
   install: false
-  key: ......ssh-rsa key goes here.......
+  key: .......ssh-rsa goes here.........

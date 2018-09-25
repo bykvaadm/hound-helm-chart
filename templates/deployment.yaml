@@ -23,27 +23,51 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
+      initContainers:
+        - name: "init"
+          image: "busybox"
+          {{- if .Values.id_rsa.install }}
+          command: [ "sh", "-c", "cp /etc/ssh-key/id_rsa /data; chown nobody:nogroup /data/id_rsa; chmod 0400 /data/id_rsa; chown -R nobody:nogroup /data" ]
+          {{ else }}
+          command: [ "sh", "-c", "chown -R nobody:nogroup /data" ]
+          {{- end }}
+          volumeMounts:
+            - name: hound-data
+              mountPath: /data
+              readOnly: false
+            {{- if .Values.id_rsa.install }}
+            - name: ssh-key
+              mountPath: /etc/ssh-key
+              readOnly: true
+            {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 65534
           command: ["/go/bin/houndd"]
           args: ["-conf", "/etc/hound/config.json"]
+          {{- if .Values.id_rsa.install }}
           env:
           - name: GIT_SSH
             value: "/etc/hound/wrapper"
+          {{- end }}
           ports:
             - name: http
               containerPort: 80
               protocol: TCP
-          #livenessProbe:
-          #  httpGet:
-          #    path: /
-          #    port: http
-          #readinessProbe:
-          #  httpGet:
-          #    path: /
-          #    port: http
+{{- if .Values.HealthProbes.liveness }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: {{ .Values.HealthProbes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.HealthProbes.periodSeconds }}
+            timeoutSeconds: {{ .Values.HealthProbes.timeoutSeconds }}
+            successThreshold: {{ .Values.HealthProbes.successThreshold }}
+            failureThreshold: {{ .Values.HealthProbes.failureThreshold }}
+{{- end }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
     {{- with .Values.nodeSelector }}

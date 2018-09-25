@@ -10,6 +10,6 @@ metadata:
 data:
   wrapper: |
     #!/bin/sh
-    ssh -o StrictHostKeyChecking=no -i /etc/ssh-key/id_rsa $@
+    ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /data/id_rsa $@
   config.json: |-
 {{ toJson .Values.config| indent 4 }}
